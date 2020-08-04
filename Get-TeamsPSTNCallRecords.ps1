@@ -17,10 +17,10 @@
  
 .EXAMPLE 
 
-    .\Get-TeamsPSTNRecords.ps1 -SavePath C:\Temp -Days 10 -SaveType JSON
+    .\Get-TeamsPSTNCallRecords.ps1 -SavePath C:\Temp -Days 10 -SaveFormat JSON
     Retreive call records for the last 10 days and save as JSON files
 
-    .\Get-TeamsPSTNRecords.ps1 -SavePath C:\Temp -Days 50 -SaveType JSON
+    .\Get-TeamsPSTNCallRecords.ps1 -SavePath C:\Temp -Days 50 -SaveFormat CSV
     Retreive call records for the last 50 days and save as CSV files
 
 #>
@@ -28,7 +28,7 @@
 param (
     [Parameter(mandatory = $true)][string]$SavePath,
     [Parameter(mandatory = $true)][int]$Days,
-    [Parameter(mandatory = $true)][ValidateSet("JSON", "CSV")]$SaveType
+    [Parameter(mandatory = $true)][ValidateSet("JSON", "CSV")]$SaveFormat
 )
 
 function Get-Calls {
@@ -36,23 +36,66 @@ function Get-Calls {
         [Parameter(mandatory = $true)][string]$type
     )
 
-    $currentUri = "https://graph.microsoft.com/beta/communications/callRecords/$type(fromDateTime=$fromDateTime,toDateTime=$toDateTime)"
+    $remainingDays = $Days
 
-    $content = while (-not [string]::IsNullOrEmpty($currentUri)) {
+    # Set initial to date of date range to end of today/start of tomorrow
+    $toDateTime = (Get-Date).AddDays(+1)
 
-        $apiCall = Invoke-RestMethod -Method "GET" -Uri $currentUri -ContentType "application/json" -Headers @{Authorization = "Bearer $token" } -ErrorAction Stop
+    while ($remainingDays -gt 0) {
+
+        $totalRecords = 0
+
+        # If remaining days is < 89 set specifically
+        if ($remainingDays -lt 89) {
+            $dayBatchSize = $remainingDays
+        } else {
+            $dayBatchSize = 89
+        }
+
+        # New remaining days based on new batch
+        $remainingDays -= $dayBatchSize
+
+        # Set from date to be minus day batch size from now
+        $fromDateTime = ($toDateTime).AddDays(-$dayBatchSize)
+
+        # Set dates to correctly formatted strings for query
+        $toDateTimeString = $toDateTime | Get-Date -Format "yyyy-MM-dd"
+        $fromDateTimeString = $fromDateTime | Get-Date -Format "yyyy-MM-dd"
+
+        $currentUri = "https://graph.microsoft.com/beta/communications/callRecords/$type(fromDateTime=$fromDateTimeString,toDateTime=$toDateTimeString)"
+
+        Write-Host "        - Checking for call records between $fromDateTimeString and $toDateTimeString..." -NoNewline
+
+        $content += while (-not [string]::IsNullOrEmpty($currentUri)) {
+
+            $apiCall = Invoke-RestMethod -Method "GET" -Uri $currentUri -ContentType "application/json" -Headers @{Authorization = "Bearer $token" } -ErrorAction Stop
     
-        $currentUri = $null
+            $currentUri = $null
 
-        if ($apiCall) {
+            if ($apiCall) {
 
-            # Check if any data is left
-            $currentUri = $apiCall.'@odata.nextLink'
+                # Check if any data is left
+                $currentUri = $apiCall.'@odata.nextLink'
 
-            $apiCall.value
+                # Count total records so far
+                $totalRecords += $apiCall.'@odata.count'
+
+                $apiCall.value
+
+            }
 
         }
 
+        # Set the to date to start from the previous from date
+        $toDateTime = $fromDateTime
+
+        if ($totalRecords -gt 0) {
+            Write-Host " Retrieved $totalRecords call records" -ForegroundColor Green
+        } else {
+            Write-Host " No records found" -ForegroundColor Yellow
+        }
+        
+        
     }
 
     return $content
@@ -64,11 +107,17 @@ Write-Host "`n------------------------------------------------------------------
             `n Get-TeamsPSTNCallRecords.ps1 - Lee Ford - https://www.lee-ford.co.uk
             `n----------------------------------------------------------------------------------------------" -ForegroundColor Yellow
 
-# Check Days is between 1 and 90 days
-if ($Days -lt 0 -or $Days -gt 90) {
+# Check Days is a postive number
+if ($Days -lt 0) {
 
-    Write-Host "Please specify a valid date range (between 0 and 90 days)" -ForegroundColor Red
+    Write-Host "Please specify a valid date range (greater than 0 days)" -ForegroundColor Red
     break
+
+}
+
+if ($Days -gt 365) {
+
+    Write-Warning "Call records are typically only stored for 365 days"
 
 }
 
@@ -93,31 +142,74 @@ $body = @{
     grant_type    = "client_credentials"
 }
 
-# Get OAuth 2.0 Token
+# Get OAuth Access Token
 $tokenRequest = Invoke-WebRequest -Method Post -Uri $uri -ContentType "application/x-www-form-urlencoded" -Body $body -UseBasicParsing
 
-# Access Token
+# Set Access Token
 $token = ($tokenRequest.Content | ConvertFrom-Json).access_token
 
-# Create date range
-$toDateTime = (Get-Date).AddDays(+1) | Get-Date -Format "yyyy-MM-dd" # Add one day to include today
-$fromDateTime = (Get-Date).AddDays(-$Days) | Get-Date -Format "yyyy-MM-dd"
+Write-Host "`r`n- Retrieving PSTN call records for the last $Days days"
 
 # Get Direct Routing calls
+Write-Host "    - Retrieving Direct Routing call records"
 $directRoutingCalls = Get-Calls -type "getDirectRoutingCalls" 
 
 # Get Calling Plan calls
+Write-Host "    - Retrieving Calling Plan call records"
 $callingPlanCalls = Get-Calls -type "getPstnCalls"
 
-# Save to files
-if ($SaveType -eq "JSON") {
+# Save to file
+Write-Host "`r`n- Saving PSTN call records to $SaveFormat files"
 
-    $directRoutingCalls | ConvertTo-Json | Out-File -FilePath "$SavePath\DirectRoutingCalls.json"
-    $callingPlanCalls | ConvertTo-Json | Out-File -FilePath "$SavePath\CallingPlanCalls.json"
+if ($SaveFormat -eq "JSON") {
 
-} elseif ($SaveType -eq "CSV") {
+    if ($directRoutingCalls) {
+        try {
+            Write-Host "    - Saving Direct Routing call records in JSON format to $SavePath\DirectRoutingCalls.json..." -NoNewline
+            $directRoutingCalls | ConvertTo-Json | Out-File -FilePath "$SavePath\DirectRoutingCalls.json"
+            Write-Host " SUCCESS" -ForegroundColor Green
+        }
+        catch {
+            Write-Host " FAILED" -ForegroundColor Red
+        }
+    }
 
-    $directRoutingCalls | Export-Csv -Path "$SavePath\DirectRoutingCalls.csv"
-    $callingPlanCalls | Export-Csv -Path "$SavePath\CallingPlanCalls.csv"
+    if ($callingPlanCalls) {
+        try {
+            Write-Host "    - Saving Calling Plan call records in JSON format to $SavePath\CallingPlanCalls.json..." -NoNewline
+            $callingPlanCalls | ConvertTo-Json | Out-File -FilePath "$SavePath\CallingPlanCalls.json"
+            Write-Host " SUCCESS" -ForegroundColor Green
+        }
+        catch {
+            Write-Host " FAILED" -ForegroundColor Red
+        }
+    }
+
+}
+elseif ($SaveFormat -eq "CSV") {
+
+    if ($directRoutingCalls) {
+        try {
+            Write-Host "    - Saving Direct Routing call records in CSV format to $SavePath\DirectRoutingCalls.csv..." -NoNewline
+            $directRoutingCalls | Export-Csv -Path "$SavePath\DirectRoutingCalls.csv"
+            Write-Host " SUCCESS" -ForegroundColor Green
+        }
+        catch {
+            Write-Host " FAILED" -ForegroundColor Red
+        }
+
+    }
+ 
+    if ($callingPlanCalls) {
+        try {
+            Write-Host "    - Saving Calling Plan call records in CSV format to $SavePath\CallingPlanCalls.csv..." -NoNewline
+            $callingPlanCalls | Export-Csv -Path "$SavePath\CallingPlanCalls.csv"
+            Write-Host " SUCCESS" -ForegroundColor Green
+        }
+        catch {
+            Write-Host " FAILED" -ForegroundColor Red
+        }
+
+    }
 
 }
