@@ -31,6 +31,11 @@ param (
     [Parameter(mandatory = $true)][ValidateSet("JSON", "CSV")]$SaveFormat
 )
 
+# Client (application) ID, tenant (directory) ID and secret
+$clientId = "<application id goes here>"
+$tenantId = "<directory id goes here>"
+$clientSecret = '<secret goes here>'
+
 function Get-Calls {
     param (
         [Parameter(mandatory = $true)][string]$type
@@ -104,7 +109,8 @@ function Get-Calls {
 
 # Start
 Write-Host "`n----------------------------------------------------------------------------------------------
-            `n Get-TeamsPSTNCallRecords.ps1 - Lee Ford - https://www.lee-ford.co.uk
+            `n Get-TeamsPSTNCallRecords.ps1 - Lee Ford
+            `n https://github.com/leeford/Get-TeamsPSTNCallRecords - https://www.lee-ford.co.uk
             `n----------------------------------------------------------------------------------------------" -ForegroundColor Yellow
 
 # Check Days is a postive number
@@ -128,11 +134,6 @@ if (-not (Test-Path -Path $SavePath)) {
     break
 
 }
-
-# Application (client) ID, tenant ID and secret
-$clientId = ""
-$tenantId = ""
-$clientSecret = ''
 
 $uri = "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token"
 $body = @{
