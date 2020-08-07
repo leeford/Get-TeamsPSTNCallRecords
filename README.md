@@ -3,6 +3,8 @@ Retrieve Microsoft Teams PSTN call records for Calling Plan and Direct Routing u
 
 ![](https://www.lee-ford.co.uk/images/get-teamspstncallrecords/get-teamspstncallrecords.png)
 
+_**Disclaimer:** This script is provided ‘as-is’ without any warranty or support. The Graph API endpoints in this script are marked as Beta by Microsoft. Use of this script is at your own risk and I accept no responsibility for any damage caused._
+
 ## Background ##
 Within the **Teams Admin Centre** there is a PSTN usage report allowing you to report on PSTN calls for Calling Plan and Direct Routing users:
 
