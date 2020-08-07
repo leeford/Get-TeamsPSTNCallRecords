@@ -32,7 +32,7 @@ param (
 )
 
 # Client (application) ID, tenant (directory) ID and secret
-$clientId = "<application id goes here>"
+$clientId = "<application id goees here>"
 $tenantId = "<directory id goes here>"
 $clientSecret = '<secret goes here>'
 
@@ -111,7 +111,10 @@ function Get-Calls {
 Write-Host "`n----------------------------------------------------------------------------------------------
             `n Get-TeamsPSTNCallRecords.ps1 - Lee Ford
             `n https://github.com/leeford/Get-TeamsPSTNCallRecords - https://www.lee-ford.co.uk
-            `n----------------------------------------------------------------------------------------------" -ForegroundColor Yellow
+            `n----------------------------------------------------------------------------------------------
+            `n Disclaimer: This script is provided ‘as-is’ without any warranty or support. The Graph API 
+            `n endpoints in this script are marked as Beta by Microsoft. Use of this script is at your own 
+            `n risk." -ForegroundColor Yellow
 
 # Check Days is a postive number
 if ($Days -lt 0) {
