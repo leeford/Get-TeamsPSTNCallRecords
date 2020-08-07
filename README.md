@@ -47,12 +47,12 @@ With the **Application ID**, **Directory ID** and **Secret** to hand, place thes
 
 > I have tested this on PowerShell Core 7 - it may work with Windows PowerShell 5.1, but I have not tried!
 
-Retreive call records for the last 10 days and save as JSON files:
+Retrieve call records for the last 10 days and save as JSON files:
 ```
 .\Get-TeamsPSTNCallRecords.ps1 -SavePath C:\Temp -Days 10 -SaveFormat JSON
 ```
 
-Retreive call records for the last 50 days and save as CSV files:
+Retrieve call records for the last 50 days and save as CSV files:
 ```
 .\Get-TeamsPSTNCallRecords.ps1 -SavePath C:\Temp -Days 50 -SaveFormat CSV
 ```

@@ -18,10 +18,10 @@
 .EXAMPLE 
 
     .\Get-TeamsPSTNCallRecords.ps1 -SavePath C:\Temp -Days 10 -SaveFormat JSON
-    Retreive call records for the last 10 days and save as JSON files
+    Retrieve call records for the last 10 days and save as JSON files
 
     .\Get-TeamsPSTNCallRecords.ps1 -SavePath C:\Temp -Days 50 -SaveFormat CSV
-    Retreive call records for the last 50 days and save as CSV files
+    Retrieve call records for the last 50 days and save as CSV files
 
 #>
 
