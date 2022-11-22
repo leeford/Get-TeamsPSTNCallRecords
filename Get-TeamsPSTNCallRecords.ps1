@@ -67,7 +67,7 @@ function Get-Calls {
         $toDateTimeString = $toDateTime | Get-Date -Format "yyyy-MM-dd"
         $fromDateTimeString = $fromDateTime | Get-Date -Format "yyyy-MM-dd"
 
-        $currentUri = "https://graph.microsoft.com/beta/communications/callRecords/$type(fromDateTime=$fromDateTimeString,toDateTime=$toDateTimeString)"
+        $currentUri = "https://graph.microsoft.com/v1.0/communications/callRecords/$type(fromDateTime=$fromDateTimeString,toDateTime=$toDateTimeString)"
 
         Write-Host "        - Checking for call records between $fromDateTimeString and $toDateTimeString..." -NoNewline
 
@@ -112,9 +112,8 @@ Write-Host "`n------------------------------------------------------------------
             `n Get-TeamsPSTNCallRecords.ps1 - Lee Ford
             `n https://github.com/leeford/Get-TeamsPSTNCallRecords - https://www.lee-ford.co.uk
             `n----------------------------------------------------------------------------------------------
-            `n Disclaimer: This script is provided ‘as-is’ without any warranty or support. The Graph API 
-            `n endpoints in this script are marked as Beta by Microsoft. Use of this script is at your own 
-            `n risk." -ForegroundColor Yellow
+            `n Disclaimer: This script is provided ‘as-is’ without any warranty or support. 
+            `n Use of this script is at your own risk." -ForegroundColor Yellow
 
 # Check Days is a postive number
 if ($Days -lt 0) {
